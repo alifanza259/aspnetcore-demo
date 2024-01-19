@@ -6,7 +6,7 @@
 2. Install EF CLI tool: `dotnet tool install --global dotnet-ef`
 3. Restore NuGet's dependencies and tools: `dotnet restore`
 4. cd to project directory: `cd WebApplication1`
-5. Run migration: `dotnet ef migrations update`
+5. Run migration: `dotnet ef database update`
 6. Run seeding and start server: `dotnet run seeddata`
 
 # Packages used:
