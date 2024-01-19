@@ -15,9 +15,9 @@
 - Microsoft.EntityFrameworkCore: ORM library for interacting with database
 
 <h3>Notes:</h3> 
-- Check what routes are available in `Controllers` directory of a project. Check `Route()` and `Http{Method}`
-- `Migrations` directory is generated from `Models`: Run `dotnet ef migrations add {className}`
-- Uses Repository Pattern and Dependency Injection
-- Define mapping between DTO and Domain Entity in `Helper/MappingProfiles.cs`
-- Add an entity: Add Interface -> Add Repository -> Add scope in `Program.cs` -> Modify Mapping -> Add controller
-- Add an endpoint: Modify Interface -> Modify Repository -> Modify Controller
+- Check what routes are available in `Controllers` directory of a project. Check `Route()` and `Http{Method}` <br>
+-`Migrations` directory is generated from `Models`: Run `dotnet ef migrations add {className}` <br>
+- Uses Repository Pattern and Dependency Injection <br>
+- Define mapping between DTO and Domain Entity in `Helper/MappingProfiles.cs` <br>
+- Add an entity: Add Interface -> Add Repository -> Add scope in `Program.cs` -> Modify Mapping -> Add controller <br>
+- Add an endpoint: Modify Interface -> Modify Repository -> Modify Controller 
