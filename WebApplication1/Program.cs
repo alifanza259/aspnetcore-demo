@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using WebApplication1.Interfaces;
@@ -14,9 +13,10 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+
         builder.Services.AddControllers();
         builder.Services.AddTransient<Seed>();
-        
+
         builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         builder.Services.AddScoped<IPokemonRepository, PokemonRepository>();
         builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -24,15 +24,25 @@ public class Program
         builder.Services.AddScoped<IOwnerRepository, OwnerRepository>();
         builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
         builder.Services.AddScoped<IReviewerRepository, ReviewerRepository>();
-        
+        builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        // builder.Services.AddSingleton<ActivityLogRepository>();
+
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = builder.Configuration.GetSection("MyRedisConStr")["ConnectionString"];
+        });
+        // builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration["RedisCacheUrl"]})); // Alternative
+
         // JSON cycle issue
         builder.Services.AddControllers()
             .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-        
+
         builder.Services.AddDbContext<DataContext>(options =>
         {
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+            options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+                MySqlServerVersion.LatestSupportedServerVersion);
         });
+        builder.Services.Configure<ActivityDatabaseSettings>(builder.Configuration.GetSection("MongoDatabase"));
 
         var app = builder.Build();
         if (args.Length == 1 && args[0].ToLower() == "seeddata")
@@ -44,13 +54,13 @@ public class Program
 
             using (var scope = scopedFactory.CreateScope())
             {
-                // TODO: R&D Where is 'new' called
                 var service = scope.ServiceProvider.GetService<Seed>();
                 service.SeedDataContext();
             }
         }
 
         app.MapControllers();
+        app.MapGet("/", () => "Hello World!");
 
         app.Run();
     }

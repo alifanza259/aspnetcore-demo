@@ -1,6 +1,9 @@
+using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Caching.Distributed;
 using WebApplication1.Dto;
 using WebApplication1.Interfaces;
 using WebApplication1.Models;
@@ -9,24 +12,42 @@ namespace WebApplication1.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CategoryController:Controller
+public class CategoryController : Controller
 {
-    private readonly IMapper _mapper;
+    private readonly IDistributedCache _cache;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IMapper _mapper;
 
-    public CategoryController(ICategoryRepository categoryRepository, IMapper mapper)
+    public CategoryController(ICategoryRepository categoryRepository, IMapper mapper, IDistributedCache cache)
     {
         _categoryRepository = categoryRepository;
         _mapper = mapper;
+        _cache = cache;
     }
 
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(Category))]
     public IActionResult GetCategories()
     {
-        var categories = _mapper.Map<List<CategoryDto>>(_categoryRepository.GetCategories());
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-        
+        var categories = new List<CategoryDto>();
+
+        string cachedData = _cache.GetString("category");
+        if (cachedData == null)
+        {
+            categories = _mapper.Map<List<CategoryDto>>(_categoryRepository.GetCategories());
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var cachedDataString = JsonSerializer.Serialize(categories);
+
+            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(DateTime.Now.AddMinutes(1))
+                .SetSlidingExpiration(TimeSpan.FromSeconds(10));
+            _cache.SetString("category", cachedDataString);
+        }
+        else
+        {
+            categories = JsonSerializer.Deserialize<List<CategoryDto>>(cachedData);
+        }
+
         return Ok(categories);
     }
 
@@ -34,10 +55,7 @@ public class CategoryController:Controller
     [ProducesResponseType(200, Type = typeof(Category))]
     public IActionResult GetCategory(int categoryId)
     {
-        if (!_categoryRepository.CategoryExists(categoryId))
-        {
-            return NotFound();
-        }
+        if (!_categoryRepository.CategoryExists(categoryId)) return NotFound();
         var category = _mapper.Map<CategoryDto>(_categoryRepository.GetCategory(categoryId));
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -50,16 +68,10 @@ public class CategoryController:Controller
     [ProducesResponseType(400)]
     public IActionResult GetPokemonByCategoryId(int categoryId)
     {
-        if (!_categoryRepository.CategoryExists(categoryId))
-        {
-            return NotFound();
-        }
+        if (!_categoryRepository.CategoryExists(categoryId)) return NotFound();
 
         var pokemons = _mapper.Map<List<PokemonDto>>(_categoryRepository.GetPokemonByCategory(categoryId));
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         return Ok(pokemons);
     }
@@ -86,7 +98,7 @@ public class CategoryController:Controller
         var categoryMap = _mapper.Map<Category>(categoryCreate);
         if (!_categoryRepository.CreateCategory(categoryMap))
         {
-            ModelState.AddModelError("","Something went wrong while creating category");
+            ModelState.AddModelError("", "Something went wrong while creating category");
             return StatusCode(500, ModelState);
         }
 
@@ -111,7 +123,7 @@ public class CategoryController:Controller
 
         if (!_categoryRepository.UpdateCategory(categoryMap))
         {
-            ModelState.AddModelError("","something wrong when updating category");
+            ModelState.AddModelError("", "something wrong when updating category");
             return StatusCode(500, ModelState);
         }
 
@@ -124,18 +136,16 @@ public class CategoryController:Controller
     [ProducesResponseType(404)]
     public IActionResult DeleteCategory(int categoryId)
     {
-
         var categoryToDelete = _categoryRepository.GetCategory(categoryId);
         if (categoryToDelete == null) return NotFound();
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         if (!_categoryRepository.DeleteCategory(categoryToDelete))
         {
-            ModelState.AddModelError("","something went wrong when deleting category");
+            ModelState.AddModelError("", "something went wrong when deleting category");
             return StatusCode(500, ModelState);
         }
 
         return NoContent();
     }
-    
 }
