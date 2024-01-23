@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WebApplication1.Interfaces;
 using WebApplication1.Models;
 using WebApplication1.Repository;
 
@@ -8,9 +9,9 @@ namespace WebApplication1.Controllers;
 [ApiController]
 public class ActivityLogController: Controller
 {
-    private readonly ActivityLogRepository _activityLogRepository;
+    private readonly IActivityLogRepository _activityLogRepository;
 
-    public ActivityLogController(ActivityLogRepository activityLogRepository)
+    public ActivityLogController(IActivityLogRepository activityLogRepository)
     {
         _activityLogRepository = activityLogRepository;
     }

@@ -13,7 +13,6 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-
         builder.Services.AddControllers();
         builder.Services.AddTransient<Seed>();
 
@@ -24,8 +23,8 @@ public class Program
         builder.Services.AddScoped<IOwnerRepository, OwnerRepository>();
         builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
         builder.Services.AddScoped<IReviewerRepository, ReviewerRepository>();
-        builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
-        // builder.Services.AddSingleton<ActivityLogRepository>();
+        // builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        builder.Services.AddSingleton<IActivityLogRepository, ActivityLogRepository>();
 
         builder.Services.AddStackExchangeRedisCache(options =>
         {
